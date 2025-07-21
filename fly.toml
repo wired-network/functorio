@@ -1,0 +1,35 @@
+# fly.toml app configuration file generated for functorio on 2025-07-20T18:38:12+09:00
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = 'functorio'
+primary_region = 'nrt'
+
+[env]
+  BIND = "fly-global-services"
+[build]
+  image = 'factoriotools/factorio:2'
+
+[[mounts]]
+  source = 'functorio_saves'
+  destination = '/factorio'
+  initial_size = '5gb'
+
+
+
+[[services]]
+  protocol = 'udp'
+  internal_port = 34197
+  auto_stop_machines = "off"
+  auto_start_machines = false
+  min_machines_running = 0
+
+  [[services.ports]]
+    port = 34197
+
+[[vm]]
+  size = 'shared-cpu-2x'
+  memory = '1gb'
+  cpu_kind = 'shared'
+  cpus = 1
