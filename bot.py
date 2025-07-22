@@ -78,11 +78,11 @@ async def stop(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         )
         return
 
-    response = await client.post(f"https://api.machines.dev/v1/apps/functorio/machines/{id}/suspend", headers=fly_auth_header)
+    response = await client.post(f"https://api.machines.dev/v1/apps/functorio/machines/{id}/stop", headers=fly_auth_header)
     if response.status_code == 200:
-        await update.message.reply_text("Machine suspended successfully.")
+        await update.message.reply_text("Machine stopped successfully.")
     else:
-        await update.message.reply_text(f"Failed to suspend machine: {response.status_code}")
+        await update.message.reply_text(f"Failed to stop machine: {response.status_code}")
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Send a message when the command /help is issued."""
