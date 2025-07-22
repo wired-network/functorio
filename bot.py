@@ -120,6 +120,7 @@ def main() -> None:
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("stop", stop))
     application.add_handler(CommandHandler("help", help_command))
+    application.add_handler(CommandHandler("nevergonnagiveyouup", lambda update, context: update.message.reply_text("https://www.youtube.com/watch?v=dQw4w9WgXcQ")))
 
     # on non command i.e message - echo the message on Telegram
     # application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, forward))
