@@ -1,6 +1,7 @@
 import logging
 import os
 from typing import List
+from datetime import datetime, timedelta
 from telegram import ForceReply, Update, Message
 from telegram.ext import (
     Application,
@@ -41,6 +42,8 @@ async def get_machine_list(fly_api_token: str) -> List[dict]:
         return []
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    context.user_data['start_time'] = datetime.now()
+    
     machines = await get_machine_list(FLY_API_TOKEN)
     if len(machines) != 1:
         await update.message.reply_text(
@@ -57,12 +60,25 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
     response = await client.post(f"https://api.machines.dev/v1/apps/functorio/machines/{id}/start", headers=fly_auth_header)
     if response.status_code == 200:
-        await update.message.reply_text("Machine started successfully.")
+        await update.message.reply_text("Machine started successfully. You must wait 5 minutes before using /stop.")
     else:
         await update.message.reply_text(f"Failed to start machine: {response.status_code}")
 
 
 async def stop(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    # Check if start was called and if 5 minutes have passed
+    start_time = context.user_data.get('start_time')
+    if start_time:
+        time_elapsed = datetime.now() - start_time
+        if time_elapsed < timedelta(minutes=5):
+            remaining_time = timedelta(minutes=5) - time_elapsed
+            remaining_minutes = int(remaining_time.total_seconds() // 60)
+            remaining_seconds = int(remaining_time.total_seconds() % 60)
+            await update.message.reply_text(
+                f"You need to wait {remaining_minutes} minutes and {remaining_seconds} seconds after /start before you can /stop."
+            )
+            return
+    
     machines = await get_machine_list(FLY_API_TOKEN)
     if len(machines) != 1:
         await update.message.reply_text(
@@ -81,6 +97,7 @@ async def stop(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     response = await client.post(f"https://api.machines.dev/v1/apps/functorio/machines/{id}/stop", headers=fly_auth_header)
     if response.status_code == 200:
         await update.message.reply_text("Machine stopped successfully.")
+        context.user_data.pop('start_time', None)
     else:
         await update.message.reply_text(f"Failed to stop machine: {response.status_code}")
 
@@ -89,6 +106,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     await update.message.reply_text(
         "Use /start@functoriobot to start the Functorio machine.\n"
         "Use /stop@functoriobot to stop the Functorio machine.\n"
+        "Note: You must wait 5 minutes after /start before you can use /stop.\n"
         "Use /help@functoriobot to get this message."
     )
 
