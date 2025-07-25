@@ -32,6 +32,22 @@ fly_auth_header = {
     "Authorization": f"Bearer {FLY_API_TOKEN}"
 }
 
+# Global variable to store authorized chat_id
+authorized_chat_id = None
+
+async def is_authorized(update: Update) -> bool:
+    """Check if the chat_id is authorized to use the bot."""
+    global authorized_chat_id
+    current_chat_id = update.effective_chat.id
+    
+    if authorized_chat_id is None:
+        # First time usage, authorize this chat
+        authorized_chat_id = current_chat_id
+        logger.info(f"Authorized chat_id: {authorized_chat_id}")
+        return True
+    
+    return current_chat_id == authorized_chat_id
+
 async def get_machine_list(fly_api_token: str) -> List[dict]:
     """Fetch the list of machines from Fly.io."""
     response = await client.get("https://api.machines.dev/v1/apps/functorio/machines", headers=fly_auth_header)
@@ -42,6 +58,10 @@ async def get_machine_list(fly_api_token: str) -> List[dict]:
         return []
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if not await is_authorized(update):
+        await update.message.reply_text("Unauthorized.")
+        return
+        
     context.user_data['start_time'] = datetime.now()
     
     machines = await get_machine_list(FLY_API_TOKEN)
@@ -66,6 +86,10 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 
 async def stop(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if not await is_authorized(update):
+        await update.message.reply_text("Unauthorized.")
+        return
+        
     # Check if start was called and if 5 minutes have passed
     start_time = context.user_data.get('start_time')
     if start_time:
@@ -103,6 +127,10 @@ async def stop(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Send a message when the command /help is issued."""
+    if not await is_authorized(update):
+        await update.message.reply_text("Unauthorized.")
+        return
+        
     await update.message.reply_text(
         "Use /start@functoriobot to start the Functorio machine.\n"
         "Use /stop@functoriobot to stop the Functorio machine.\n"
